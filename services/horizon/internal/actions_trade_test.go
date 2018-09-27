@@ -11,8 +11,8 @@ import (
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	. "github.com/stellar/go/services/horizon/internal/db2/history"
 	. "github.com/stellar/go/services/horizon/internal/test/trades"
-	"github.com/stellar/go/xdr"
 	"github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/xdr"
 )
 
 func TestTradeActions_Index(t *testing.T) {
@@ -203,11 +203,14 @@ func TestTradeActions_Aggregation(t *testing.T) {
 	q.Add("end_time", strconv.FormatInt(start+hour, 10))
 	q.Add("order", "asc")
 
-
 	//test no resolution provided
 	w := ht.GetWithParams(aggregationPath, q)
-	println(w.Body.String())
+	extras := ht.UnmarshalExtras(w.Body)
 	ht.Assert.Equal(400, w.Code)
+	ht.Assert.Equal("resolution", extras["invalid_field"])
+	ht.Assert.Equal("illegal or missing resolution. allowed resolutions are: "+
+		"1 minute (60000), 5 minutes (300000), 15 minutes (900000), 1 hour (3600000), "+
+		"1 day (86400000) and 1 week (604800000)", extras["reason"])
 
 	//test illegal resolution
 	if history.StrictResolutionFiltering {
