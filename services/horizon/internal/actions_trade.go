@@ -138,12 +138,19 @@ func (action *TradeAggregateIndexAction) JSON() {
 }
 
 func (action *TradeAggregateIndexAction) loadParams() {
+	var hasBaseAssetFilter, hasCounterAssetFilter bool
+
 	action.PagingParams = action.GetPageQuery()
-	action.BaseAssetFilter = action.GetAsset("base_")
-	action.CounterAssetFilter = action.GetAsset("counter_")
+	action.BaseAssetFilter, hasBaseAssetFilter = action.MaybeGetAsset("base_")
+	action.CounterAssetFilter, hasCounterAssetFilter = action.MaybeGetAsset("counter_")
 	action.StartTimeFilter = action.GetTimeMillis("start_time")
 	action.EndTimeFilter = action.GetTimeMillis("end_time")
 	action.ResolutionFilter = action.GetInt64("resolution")
+
+	if !hasBaseAssetFilter || !hasCounterAssetFilter {
+		action.SetInvalidField("base_asset_type,counter_asset_type", errors.New("this endpoint supports asset pairs but none or one asset supplied"))
+		return
+	}
 
 	//check if resolution is legal
 	resolutionDuration := gTime.Duration(action.ResolutionFilter) * gTime.Millisecond

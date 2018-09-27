@@ -196,16 +196,31 @@ func TestTradeActions_Aggregation(t *testing.T) {
 	var nextLink string
 
 	q := make(url.Values)
-	setAssetQuery(&q, "base_", ass1)
-	setAssetQuery(&q, "counter_", ass2)
-
 	q.Add("start_time", strconv.FormatInt(start, 10))
 	q.Add("end_time", strconv.FormatInt(start+hour, 10))
 	q.Add("order", "asc")
 
-	//test no resolution provided
+	// test no base_ and counter_ asset
 	w := ht.GetWithParams(aggregationPath, q)
 	extras := ht.UnmarshalExtras(w.Body)
+	ht.Assert.Equal(400, w.Code)
+	ht.Assert.Equal("base_asset_type,counter_asset_type", extras["invalid_field"])
+	ht.Assert.Equal("this endpoint supports asset pairs but none or one asset supplied", extras["reason"])
+
+	// test no counter_ asset
+	setAssetQuery(&q, "base_", ass1)
+
+	w = ht.GetWithParams(aggregationPath, q)
+	extras = ht.UnmarshalExtras(w.Body)
+	ht.Assert.Equal(400, w.Code)
+	ht.Assert.Equal("base_asset_type,counter_asset_type", extras["invalid_field"])
+	ht.Assert.Equal("this endpoint supports asset pairs but none or one asset supplied", extras["reason"])
+
+	setAssetQuery(&q, "counter_", ass2)
+
+	//test no resolution provided
+	w = ht.GetWithParams(aggregationPath, q)
+	extras = ht.UnmarshalExtras(w.Body)
 	ht.Assert.Equal(400, w.Code)
 	ht.Assert.Equal("resolution", extras["invalid_field"])
 	ht.Assert.Equal("illegal or missing resolution. allowed resolutions are: "+
