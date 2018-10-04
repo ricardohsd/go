@@ -392,3 +392,18 @@ func TestTradeActions_AggregationOrdering(t *testing.T) {
 		ht.Assert.Equal("3.0000000", records[0].Close)
 	}
 }
+
+func TestTradeActions_AssetValidation(t *testing.T) {
+	ht := StartHTTPTest(t, "trades")
+	defer ht.Finish()
+
+	var q = make(url.Values)
+	q.Add("base_asset_type", "native")
+
+	w := ht.GetWithParams("/trades", q)
+	ht.Assert.Equal(400, w.Code)
+
+	extras := ht.UnmarshalExtras(w.Body)
+	ht.Assert.Equal("base_asset_type,counter_asset_type", extras["invalid_field"])
+	ht.Assert.Equal("this endpoint supports asset pairs but only one asset supplied", extras["reason"])
+}
